@@ -1,0 +1,158 @@
+buildscript {
+    repositories {
+        maven { url = 'https://maven.parchmentmc.org' }
+        maven { url = 'https://maven.minecraftforge.net' }
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
+        classpath 'org.parchmentmc:librarian:1.+'
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'eclipse'
+apply plugin: 'maven-publish'
+apply plugin: 'org.parchmentmc.librarian.forgegradle'
+
+version = "${mc_version}-${mod_version}"
+group = mod_group
+archivesBaseName = mod_id
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+println('Java: ' + System.getProperty('java.version') +
+        ' JVM: ' + System.getProperty('java.vm.version') +
+        '(' + System.getProperty('java.vendor') + ')' +
+        ' Arch: ' + System.getProperty('os.arch'))
+
+minecraft {
+    mappings channel: 'parchment', version: "${parch_mapping}-${mc_version}"
+
+    runs {
+        configureEach {
+            workingDirectory project.file("run/${it.name}")
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        client {}
+        server {}
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://www.cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
+    }
+}
+
+def findLatestJar(String relativeDir, String pattern) {
+    File dir = file(relativeDir)
+    if (!dir.exists()) {
+        return null
+    }
+    def jars = fileTree(dir: dir, include: pattern).files.findAll { file ->
+        file.name.endsWith(".jar") &&
+                !file.name.contains("-sources") &&
+                !file.name.contains("-javadoc")
+    }
+    return jars.isEmpty() ? null : jars.max { it.lastModified() }
+}
+
+def quickstackLocalJar = findLatestJar("../DropOff/build/libs", "quickstack-*.jar")
+def sbLocalJar = findLatestJar("../SophisticatedBackpacks/build/libs", "sophisticatedbackpacks-*.jar")
+def scLocalJar = findLatestJar("../SophisticatedCore/build/libs", "sophisticatedcore-*.jar")
+
+def quickstackMaven = "curse.maven:quickstack-354522:${quickstack_cf_file_id}"
+def sbMaven = "curse.maven:sophisticated-backpacks-422301:${sb_cf_file_id}"
+def scMaven = "curse.maven:sophisticated-core-618298:${sc_cf_file_id}"
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${mc_version}-${forge_version}"
+
+    if (quickstackLocalJar != null) {
+        println("Using local Quickstack jar at runtime: ${quickstackLocalJar}")
+        compileOnly fg.deobf(quickstackMaven)
+        runtimeOnly files(quickstackLocalJar)
+    } else {
+        println("Using CurseMaven Quickstack dependency")
+        implementation fg.deobf(quickstackMaven)
+    }
+
+    if (sbLocalJar != null) {
+        println("Using local SophisticatedBackpacks jar at runtime: ${sbLocalJar}")
+        compileOnly fg.deobf(sbMaven)
+        runtimeOnly files(sbLocalJar)
+    } else {
+        println("Using CurseMaven SophisticatedBackpacks dependency")
+        implementation fg.deobf(sbMaven)
+    }
+
+    if (scLocalJar != null) {
+        println("Using local SophisticatedCore jar at runtime: ${scLocalJar}")
+        compileOnly fg.deobf(scMaven)
+        runtimeOnly files(scLocalJar)
+    } else {
+        println("Using CurseMaven SophisticatedCore dependency")
+        implementation fg.deobf(scMaven)
+    }
+}
+
+tasks.withType(ProcessResources).configureEach {
+    def replaceProperties = [
+            minecraft_version      : mc_version,
+            minecraft_version_range: minecraft_version_range,
+            forge_version_range    : forge_version_range,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties + [project: project]
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+                "Specification-Title"     : mod_id,
+                "Specification-Vendor"    : mod_authors,
+                "Specification-Version"   : "1",
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : project.jar.archiveVersion,
+                "Implementation-Vendor"   : mod_authors,
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+}
+
+jar.finalizedBy('reobfJar')
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact jar
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/mcmodsrepo"
+        }
+    }
+}

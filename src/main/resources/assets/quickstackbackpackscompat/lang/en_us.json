@@ -1,0 +1,4 @@
+{
+  "quickstackbackpackscompat.config.include_player_inventory": "Include Player Inventory",
+  "quickstackbackpackscompat.config.include_player_inventory.tooltip": "When enabled, quickstack from backpack GUI will also move items from the player inventory."
+}
