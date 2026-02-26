@@ -96,7 +96,7 @@ Current default values:
 ```
 
 Output jar:
-- `build/libs/quickstackbackpackscompat-1.20.1-1.0.0.jar`
+- `build/libs/quickstackbackpackscompat-1.0.0+forge-1.20.1.jar`
 
 ## Scope
 - Does not change `C/X` hotkeys

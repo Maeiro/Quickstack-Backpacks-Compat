@@ -14,7 +14,7 @@ apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 apply plugin: 'org.parchmentmc.librarian.forgegradle'
 
-version = "${mc_version}-${mod_version}"
+version = "${mod_version}+forge-${mc_version}"
 group = mod_group
 archivesBaseName = mod_id
 
