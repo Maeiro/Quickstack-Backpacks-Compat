@@ -6,6 +6,8 @@ Addon for **Forge 1.20.1** that adds compatibility between:
 
 It adds **Quickstack** and **Dump** buttons to Sophisticated Backpacks' backpack screen, using DropOff logic to move items into nearby containers.
 
+![Showcase](img/showcase.png)
+
 ## Features
 - Quickstack/Dump buttons on `sophisticatedbackpacks:backpack`
 - Moves items from the backpack into nearby containers
